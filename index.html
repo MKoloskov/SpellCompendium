@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ellador&#x27;s Spell Compendium</title>
+<style>
+:root{--bg:#faf8f3;--panel:#fff;--ink:#22201c;--muted:#6f6a60;--line:#e4dfd3;--accent:#7a3b2e;--chip:#f1ece1;--chip-on:#7a3b2e;--chip-on-ink:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#17161a;--panel:#201f24;--ink:#ece8df;--muted:#a19b8f;--line:#34323a;--accent:#d98c6f;--chip:#2a2930;--chip-on:#d98c6f;--chip-on-ink:#17161a}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{position:sticky;top:0;z-index:2;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 16px 8px}
+h1{font:600 20px/1.2 Georgia,serif;margin:0 0 8px;color:var(--accent)}
+.mode{font:12px system-ui;color:var(--muted);margin-left:8px}
+#q{width:100%;padding:10px 12px;font-size:16px;border:1px solid var(--line);border-radius:8px;background:var(--panel);color:var(--ink)}
+.filters{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;align-items:center}
+.group{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.group b{font-size:12px;color:var(--muted);font-weight:600;margin-right:2px}
+.chip{border:0;background:var(--chip);color:var(--ink);padding:3px 9px;border-radius:999px;font-size:13px;cursor:pointer}
+.chip.on{background:var(--chip-on);color:var(--chip-on-ink)}
+.bar{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--muted);margin-top:6px}
+.bar button{background:none;border:0;color:var(--accent);cursor:pointer;font-size:13px}
+main{max-width:980px;margin:0 auto;padding:8px 12px 60px}
+details{scroll-margin-top:var(--hh,170px);background:var(--panel);border:1px solid var(--line);border-radius:10px;margin:8px 0}
+summary{list-style:none;cursor:pointer;padding:10px 14px;display:grid;grid-template-columns:1fr auto;gap:2px 12px}
+summary::-webkit-details-marker{display:none}
+.name{font:600 16px Georgia,serif}.lvl{font-size:13px;color:var(--accent);text-align:right;white-space:nowrap}
+.meta{grid-column:1/-1;font-size:13px;color:var(--muted)}
+.tag{display:inline-block;font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 5px;margin-left:6px;color:var(--muted);vertical-align:2px}
+.tag.draft{border-color:var(--accent);color:var(--accent)}
+.body{padding:0 14px 14px;border-top:1px solid var(--line)}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:3px 14px;font-size:13.5px;margin:12px 0}
+dt{color:var(--muted)}dd{margin:0;word-break:break-word}
+.desc p{margin:.6em 0}.desc ul{margin:.4em 0;padding-left:1.3em}
+h3{font:600 14px system-ui;margin:14px 0 4px;color:var(--accent)}
+.empty{text-align:center;color:var(--muted);padding:40px}
+a.perma{font-size:12px;color:var(--muted);text-decoration:none}
+dd a{color:var(--accent)}
+</style></head><body>
+<header>
+  <h1>Ellador&#x27;s Spell Compendium<span class="mode"></span></h1>
+  <input id="q" type="search" placeholder="Search spells: name, text, components…  (press / to focus)" autocomplete="off">
+  <div class="filters" id="filters"></div>
+  <div class="bar"><span id="count"></span><span><button id="sort"></button> · <button id="reset">Reset filters</button></span></div>
+</header>
+<main id="list"></main>
+<script>
+const SPELLS = [];
+const ORD = n => n===0 ? "Cantrip" : n+(["th","st","nd","rd"][(n%100>10&&n%100<14)?0:Math.min(n%10,4)%4]||"th")+" Circle";
+const lvlName = n => n==null ? "Unleveled" : ORD(n);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function md(src){
+  if(!src) return "";
+  const inline = t => esc(t)
+    .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g,"$2").replace(/\[\[([^\]]+)\]\]/g,"$1")
+    .replace(/\*\*(.+?)\*\*/g,"<b>$1</b>").replace(/(^|[^*])\*([^*]+)\*/g,"$1<i>$2</i>");
+  return src.trim().split(/\n\s*\n/).map(block => {
+    const lines = block.split("\n");
+    if(lines.every(l => /^\s*[-*]\s+/.test(l))) return "<ul>"+lines.map(l=>"<li>"+inline(l.replace(/^\s*[-*]\s+/,""))+"</li>").join("")+"</ul>";
+    return "<p>"+lines.map(l => /^\s*[-*]\s+/.test(l) ? "• "+inline(l.replace(/^\s*[-*]\s+/,"")) : inline(l)).join("<br>")+"</p>";
+  }).join("");
+}
+const FILTERS = [
+  {key:"level", label:"Circle", get:s=>[s.level==null?"—":String(s.level)], fmt:v=>v==="0"?"Cantrip":v},
+  {key:"school", label:"School", get:s=>s.school?[s.school]:[]},
+  {key:"domain", label:"Domain", get:s=>s.domain},
+  {key:"chars", label:"Character", get:s=>s.chars},
+  {key:"cast", label:"Casting", get:s=>s.cast?[s.cast]:[]},
+  {key:"flags", label:"Tags", get:s=>[...(s.ritual?["Ritual"]:[]), ...(s.conc==="Yes"?["Concentration"]:[])]},
+];
+const state = {q:"", sel:{}, byName:false};
+FILTERS.forEach(f => state.sel[f.key] = new Set());
+const box = document.getElementById("filters");
+FILTERS.forEach(f => {
+  const vals = [...new Set(SPELLS.flatMap(f.get))].sort((a,b)=> f.key==="level" ? (+a)-(+b) : a.localeCompare(b));
+  if(!vals.length) return;
+  const g = document.createElement("div"); g.className="group"; g.innerHTML = "<b>"+f.label+"</b>";
+  vals.forEach(v => { const b=document.createElement("button"); b.className="chip"; b.textContent=f.fmt?f.fmt(v):v;
+    b.onclick=()=>{ const s=state.sel[f.key]; s.has(v)?s.delete(v):s.add(v); b.classList.toggle("on"); render(true); }; g.appendChild(b); });
+  box.appendChild(g);
+});
+const hay = s => [s.name, ...s.aliases, s.school, s.desc, s.higher, ...s.fields.map(f=>f[1])].join(" ").toLowerCase();
+SPELLS.forEach(s => s._h = hay(s));
+function render(top){
+  if(top) window.scrollTo(0,0);
+  const terms = state.q.toLowerCase().split(/\s+/).filter(Boolean);
+  let out = SPELLS.filter(s => terms.every(t => s._h.includes(t)) &&
+    FILTERS.every(f => { const sel=state.sel[f.key]; if(!sel.size) return true; const v=f.get(s); return f.key==="flags" ? [...sel].every(x=>v.includes(x)) : v.some(x=>sel.has(x)); }));
+  out.sort((a,b) => state.byName ? a.name.localeCompare(b.name) : ((a.level??99)-(b.level??99) || a.name.localeCompare(b.name)));
+  document.getElementById("count").textContent = out.length+" of "+SPELLS.length+" spells";
+  document.getElementById("sort").textContent = state.byName ? "Sort: A–Z" : "Sort: by circle";
+  const open = location.hash.slice(1);
+  document.getElementById("list").innerHTML = out.length ? out.map(s => `
+<details id="${s.id}"${s.id===open||out.length===1?" open":""}>
+<summary><span class="name">${esc(s.name)}${s.ritual?'<span class="tag">Ritual</span>':""}${s.conc==="Yes"?'<span class="tag">Conc.</span>':""}${s.draft?'<span class="tag draft">Draft</span>':""}</span>
+<span class="lvl">${esc(lvlName(s.level))}${s.school?" · "+esc(s.school):""}</span>
+<span class="meta">${[s.cast,s.range,s.duration].filter(Boolean).map(esc).join(" · ")}${s.aliases.length?" · aka "+s.aliases.map(esc).join(", "):""}</span></summary>
+<div class="body"><dl>${s.fields.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${/^https?:\/\//.test(v)?`<a href="${esc(v)}" target="_blank" rel="noopener">${esc(v.replace(/^https?:\/\//,"").slice(0,48))}…</a>`:esc(v)}</dd>`).join("")}</dl>
+<div class="desc">${md(s.desc)}</div>${s.higher?`<h3>At higher levels</h3><div class="desc">${md(s.higher)}</div>`:""}
+<a class="perma" href="#${s.id}">Link to this spell</a></div></details>`).join("") : '<div class="empty">No spells match.</div>';
+}
+const q = document.getElementById("q");
+q.oninput = () => { state.q = q.value; render(true); };
+document.getElementById("sort").onclick = () => { state.byName = !state.byName; render(); };
+document.getElementById("reset").onclick = () => { state.q=""; q.value=""; Object.values(state.sel).forEach(s=>s.clear()); document.querySelectorAll(".chip.on").forEach(c=>c.classList.remove("on")); render(true); };
+document.addEventListener("keydown", e => { if(e.key==="/" && document.activeElement!==q){ e.preventDefault(); q.focus(); } });
+window.addEventListener("hashchange", () => { const d=document.getElementById(location.hash.slice(1)); if(d){ d.open=true; d.scrollIntoView({block:"start"}); } });
+const setHH=()=>document.documentElement.style.setProperty("--hh",document.querySelector("header").offsetHeight+8+"px");
+setHH(); window.addEventListener("resize",setHH);
+render();
+if(location.hash){ const d=document.getElementById(location.hash.slice(1)); if(d) d.scrollIntoView({block:"start"}); }
+</script></body></html>
