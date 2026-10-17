@@ -60,8 +60,8 @@ const FILTERS = [
   {key:"level", label:"Circle", get:s=>[s.level==null?"—":String(s.level)], fmt:v=>v==="0"?"Cantrip":v},
   {key:"school", label:"School", get:s=>s.school?[s.school]:[]},
   {key:"domain", label:"Domain", get:s=>s.domain},
-  {key:"chars", label:"Character", get:s=>s.chars},
-  {key:"cast", label:"Casting", get:s=>s.cast?[s.cast]:[]},
+  {key:"chars", label:"Available to", get:s=>s.chars},
+  {key:"cast", label:"Casting", get:s=>s.cast},
   {key:"flags", label:"Tags", get:s=>[...(s.ritual?["Ritual"]:[]), ...(s.conc==="Yes"?["Concentration"]:[])]},
 ];
 const state = {q:"", sel:{}, byName:false};
@@ -90,7 +90,7 @@ function render(top){
 <details id="${s.id}"${s.id===open||out.length===1?" open":""}>
 <summary><span class="name">${esc(s.name)}${s.ritual?'<span class="tag">Ritual</span>':""}${s.conc==="Yes"?'<span class="tag">Conc.</span>':""}${s.draft?'<span class="tag draft">Draft</span>':""}</span>
 <span class="lvl">${esc(lvlName(s.level))}${s.school?" · "+esc(s.school):""}</span>
-<span class="meta">${[s.cast,s.range,s.duration].filter(Boolean).map(esc).join(" · ")}${s.aliases.length?" · aka "+s.aliases.map(esc).join(", "):""}</span></summary>
+<span class="meta">${[s.cast.join(" or "),s.range,s.duration].filter(Boolean).map(esc).join(" · ")}${s.aliases.length?" · aka "+s.aliases.map(esc).join(", "):""}</span></summary>
 <div class="body"><dl>${s.fields.map(([k,v])=>`<dt>${esc(k)}</dt><dd>${/^https?:\/\//.test(v)?`<a href="${esc(v)}" target="_blank" rel="noopener">${esc(v.replace(/^https?:\/\//,"").slice(0,48))}…</a>`:esc(v)}</dd>`).join("")}</dl>
 <div class="desc">${md(s.desc)}</div>${s.higher?`<h3>At higher levels</h3><div class="desc">${md(s.higher)}</div>`:""}
 <a class="perma" href="#${s.id}">Link to this spell</a></div></details>`).join("") : '<div class="empty">No spells match.</div>';

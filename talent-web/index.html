@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elara — Talent Trees</title>
+<style>
+  :root {
+    --bg: #141011; --panel: #1f191a; --panel-edge: #3a2c2d; --text: #eadfd6; --muted: #a89a90;
+    --minor: #2f8f4e; --major: #6b3fa0; --milestone: #a3262b; --unset: #4b4b4b;
+    --gold: #ffd34d; --line: #5a4a48; --bad: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 Georgia, "Times New Roman", serif; }
+  header {
+    position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 18px; align-items: center;
+    padding: 12px 20px; background: #1a1415ee; border-bottom: 1px solid var(--panel-edge); backdrop-filter: blur(4px);
+  }
+  header h1 { margin: 0 12px 0 0; font-size: 20px; color: #f3c9a0; letter-spacing: .5px; }
+  .stat { display: flex; align-items: center; gap: 6px; }
+  .stat label, .stat .lbl { color: var(--muted); }
+  .stat input { width: 80px; padding: 4px 6px; background: #0f0c0c; color: var(--text); border: 1px solid var(--panel-edge); border-radius: 4px; font: inherit; }
+  .stat .val { font-weight: bold; min-width: 2.5em; }
+  .stat .val.neg { color: var(--bad); }
+  header button { background: #2a2122; color: var(--text); border: 1px solid var(--panel-edge); border-radius: 4px; padding: 5px 10px; font: inherit; cursor: pointer; }
+  header button:hover { border-color: var(--gold); }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; color: var(--muted); font-size: 12px; margin-left: auto; }
+  .legend span::before { content: ""; display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; background: var(--c); border: 2px solid var(--b, transparent); }
+  nav#tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 14px 22px 0; }
+  nav#tabs button {
+    background: var(--panel); color: var(--muted); border: 1px solid var(--panel-edge); border-radius: 8px 8px 0 0;
+    padding: 7px 14px; font: inherit; cursor: pointer;
+  }
+  nav#tabs button .pp { font-size: 11px; margin-left: 6px; opacity: .8; }
+  nav#tabs button:hover { color: var(--text); }
+  nav#tabs button.active { color: #f3c9a0; border-color: var(--gold); border-bottom-color: var(--panel); background: #2a2122; }
+  .tree.hidden { display: none; }
+  main { display: flex; flex-wrap: wrap; gap: 22px; padding: 22px; align-items: flex-start; }
+  .tree { background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 10px; padding: 12px 14px 16px; }
+  .tree h2 { margin: 0 0 2px; font-size: 16px; color: #f3c9a0; }
+  .tree .sub { margin: 0 0 10px; color: var(--muted); font-size: 12px; max-width: 520px; }
+  .tree .empty { color: var(--muted); font-style: italic; padding: 10px 0; }
+  .canvas { position: relative; }
+  .canvas svg { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+  .canvas path { fill: none; stroke: var(--line); stroke-width: 2; }
+  .canvas path.or { stroke-dasharray: 6 5; }
+  .canvas path.lit { stroke: var(--gold); }
+  .node {
+    position: absolute; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+    padding: 6px 8px; border-radius: 8px; background: var(--kind); border: 3px solid #00000055; cursor: pointer; user-select: none;
+    box-shadow: 0 2px 6px #0008; transition: box-shadow .15s, border-color .15s, filter .15s;
+  }
+  .node .nm { font-weight: bold; font-size: 13px; line-height: 1.15; max-height: 3.45em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+  .node .cost { flex-shrink: 0; }
+  .node .cost { font-size: 12px; margin-top: 3px; opacity: .9; }
+  .node.locked { filter: saturate(.35) brightness(.6); }
+  .node.bought { border-color: var(--gold); box-shadow: 0 0 10px 2px #ffd34daa, 0 0 2px 1px var(--gold) inset; }
+  .node:hover { filter: brightness(1.15); }
+  .node.locked:hover { filter: saturate(.5) brightness(.75); }
+  .k-minor { --kind: var(--minor); } .k-major { --kind: var(--major); } .k-milestone { --kind: var(--milestone); } .k-unset { --kind: var(--unset); }
+  #tip {
+    position: fixed; z-index: 50; display: none; max-width: 380px; max-height: 70vh; overflow: auto; padding: 12px 14px;
+    background: #0f0c0cf5; border: 1px solid var(--panel-edge); border-radius: 8px; box-shadow: 0 6px 24px #000c;
+  }
+  #tip h3 { margin: 0 0 4px; font-size: 16px; color: #f3c9a0; }
+  #tip .meta { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  #tip .meta b { color: var(--text); }
+  #tip .status { font-size: 12px; margin-bottom: 6px; }
+  #tip .status.ok { color: var(--gold); } #tip .status.no { color: var(--bad); }
+  #tip ul { margin: 4px 0 0; padding-left: 18px; } #tip li { margin: 2px 0; }
+  #tip .hint { margin-top: 8px; font-size: 11px; color: var(--muted); }
+  #toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 60; display: none;
+    padding: 9px 16px; border-radius: 6px; background: #2a1416; border: 1px solid var(--bad); color: #ffd9d9;
+  }
+  #toast.good { background: #2a2414; border-color: var(--gold); color: #fff1c4; }
+  footer { padding: 0 22px 26px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Elara — Talent Trees</h1>
+  <div class="stat"><label for="budget">Points available</label><input id="budget" type="number" min="0" step="0.5"></div>
+  <div class="stat"><span class="lbl">Spent</span><span class="val" id="spent">0</span></div>
+  <div class="stat"><span class="lbl">Remaining</span><span class="val" id="remaining">0</span></div>
+  <button id="reset" title="Bought = talents marked (+) in the note">Reset to note</button>
+  <button id="clear" title="Refund everything">Refund all</button>
+  <div class="legend">
+    <span style="--c: var(--minor)">Minor</span>
+    <span style="--c: var(--major)">Major</span>
+    <span style="--c: var(--milestone)">Milestone</span>
+    <span style="--c: var(--unset)">Type not set</span>
+    <span style="--c: transparent; --b: var(--gold)">Bought</span>
+  </div>
+</header>
+<nav id="tabs"></nav>
+<main id="trees"></main>
+<footer id="foot"></footer>
+<div id="tip"></div>
+<div id="toast"></div>
+
+<script src="data.js"></script>
+<script>
+(() => {
+  const DATA = window.TALENT_DATA;
+  const KEY = "elara-talents-v1";
+  const W = 170, H = 78, GX = 26, GY = 50, PAD = 6, MAXC = 5;
+
+  const items = {}, treeOf = {};
+  DATA.trees.forEach((t, ti) => t.items.forEach(it => { items[it.id] = it; treeOf[it.id] = ti; }));
+
+  const fmt = n => String(Math.round(n * 100) / 100);
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const kindLabel = { minor: "Minor", major: "Major", milestone: "Milestone", unset: "Type not set" };
+
+  // ---------- state
+  const defaults = () => {
+    const bought = Object.values(items).filter(i => i.owned).map(i => i.id);
+    return { budget: bought.reduce((s, id) => s + (items[id].cost || 0), 0), bought };
+  };
+  let state;
+  try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) { state = null; }
+  if (!state || !Array.isArray(state.bought)) state = defaults();
+  state.bought = state.bought.filter(id => items[id]);
+  let bought = new Set(state.bought);
+  const save = () => localStorage.setItem(KEY, JSON.stringify({ budget: state.budget, bought: [...bought] }));
+  const spent = () => [...bought].reduce((s, id) => s + (items[id].cost || 0), 0);
+
+  // ---------- rules
+  function satisfied(it, set) {
+    for (const group of it.prereq.all) if (!group.some(id => set.has(id))) return false;
+    if ((it.prereq.unresolved || []).length) return false;
+    if (it.prereq.any) {
+      const n = anyPool(it).filter(id => set.has(id)).length;
+      if (n < it.prereq.any) return false;
+    }
+    return true;
+  }
+  function anyPool(it) {
+    if ((it.prereq.anyFrom || []).length) return it.prereq.anyFrom;
+    const named = new Set(it.prereq.all.flat());
+    return DATA.trees[treeOf[it.id]].items.map(o => o.id).filter(id => id !== it.id && !named.has(id));
+  }
+  function missingText(it) {
+    const parts = it.prereq.all.filter(g => !g.some(id => bought.has(id))).map(g => g.map(id => items[id].name).join(" or "));
+    if (it.prereq.any) {
+      const pool = anyPool(it), have = pool.filter(id => bought.has(id)).length;
+      if (have < it.prereq.any) parts.push((it.prereq.anyFrom || []).length
+        ? `any ${it.prereq.any} of ${pool.map(id => items[id].name).join(", ")}`
+        : `any ${it.prereq.any} other talents in this tree`);
+    }
+    (it.prereq.unresolved || []).forEach(u => parts.push(`"${u}" (not found in the note)`));
+    return parts.join(", ");
+  }
+  function dependents(it) {
+    const without = new Set(bought); without.delete(it.id);
+    return [...bought].filter(id => id !== it.id && !satisfied(items[id], without)).map(id => items[id].name);
+  }
+  function toggle(id) {
+    const it = items[id];
+    if (bought.has(id)) {
+      const deps = dependents(it);
+      if (deps.length) return toast(`Can't refund ${it.name}: ${deps.join(", ")} depends on it.`);
+      bought.delete(id); toast(`Refunded ${it.name} (+${fmt(it.cost || 0)} PP)`, true);
+    } else {
+      if (it.cost == null) return toast(`${it.name} has no price yet. Add {x PP} next to its name in the note.`);
+      if (!satisfied(it, bought)) return toast(`${it.name} requires: ${missingText(it)}.`);
+      const rem = state.budget - spent();
+      if (rem + 1e-9 < it.cost) return toast(`Not enough points: ${it.name} costs ${fmt(it.cost)}, you have ${fmt(rem)}.`);
+      bought.add(id); toast(`Bought ${it.name} (−${fmt(it.cost)} PP)`, true);
+    }
+    save(); refresh();
+    if (tipFor === id) showTip(id, lastTipPos);
+  }
+
+  // ---------- layout
+  const main = document.getElementById("trees");
+  const UNASSIGNED = "Unassigned", sections = [];
+  const nodeEls = {}, pathEls = [];
+  DATA.trees.forEach((t, ti) => {
+    const sec = document.createElement("section"); sec.className = "tree";
+    sec.dataset.ben = t.benefactor || UNASSIGNED; sections.push(sec);
+    const m = t.title.match(/^(.*?)\s*(?:[-:]\s+|:\s*)(about.*)$/i);
+    sec.innerHTML = `<h2>${esc(m ? m[1] : t.title)}</h2>` + (m ? `<p class="sub">${esc(m[2].replace(/:$/, ""))}</p>` : "");
+    main.appendChild(sec);
+    if (!t.items.length) { sec.insertAdjacentHTML("beforeend", `<div class="empty">No talents yet</div>`); return; }
+
+    const depth = {};
+    const parentsOf = it => [...it.prereq.all.flat(), ...(it.prereq.anyFrom || [])].filter(id => items[id] && treeOf[id] === ti);
+    const d = (it, seen = new Set()) => {
+      if (depth[it.id] != null) return depth[it.id];
+      seen.add(it.id);
+      const ps = parentsOf(it).filter(id => !seen.has(id));
+      return depth[it.id] = ps.length ? 1 + Math.max(...ps.map(id => d(items[id], seen))) : 0;
+    };
+    t.items.forEach(it => d(it));
+    const byDepth = [];
+    t.items.forEach(it => (byDepth[depth[it.id]] ||= []).push(it));
+    const rows = [];
+    byDepth.forEach(r => { if (r) for (let i = 0; i < r.length; i += MAXC) rows.push(r.slice(i, i + MAXC)); });
+    const cols = Math.max(...rows.map(r => r ? r.length : 0));
+    const width = Math.max(cols * (W + GX) - GX + 2 * PAD, 240);
+    const height = rows.length * (H + GY) - GY + 2 * PAD;
+
+    const cv = document.createElement("div"); cv.className = "canvas";
+    cv.style.width = width + "px"; cv.style.height = height + "px";
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("width", width); svg.setAttribute("height", height);
+    cv.appendChild(svg); sec.appendChild(cv);
+
+    const pos = {};
+    rows.forEach((row, r) => {
+      if (!row) return;
+      const rw = row.length * (W + GX) - GX, x0 = (width - rw) / 2;
+      row.forEach((it, k) => {
+        const x = x0 + k * (W + GX), y = PAD + r * (H + GY);
+        pos[it.id] = { x, y };
+        const el = document.createElement("div");
+        el.className = `node k-${it.kind}`;
+        el.style.cssText = `left:${x}px;top:${y}px;width:${W}px;height:${H}px`;
+        el.innerHTML = `<div class="nm">${esc(it.name || "(unnamed)")}</div><div class="cost">${it.cost == null ? "? PP" : fmt(it.cost) + " PP"}</div>`;
+        el.addEventListener("click", e => { e.stopPropagation(); showTip(it.id, { x: e.clientX, y: e.clientY }); });
+        el.addEventListener("contextmenu", e => { e.preventDefault(); toggle(it.id); });
+        let press;
+        el.addEventListener("touchstart", () => { press = setTimeout(() => { press = "done"; toggle(it.id); }, 550); }, { passive: true });
+        el.addEventListener("touchend", e => { if (press === "done") e.preventDefault(); else clearTimeout(press); press = null; });
+        el.addEventListener("touchmove", () => { clearTimeout(press); press = null; }, { passive: true });
+        cv.appendChild(el); nodeEls[it.id] = el;
+      });
+    });
+    t.items.forEach(it => [...it.prereq.all, ...((it.prereq.anyFrom || []).length ? [it.prereq.anyFrom] : [])].forEach(group => group.forEach(pid => {
+      if (!pos[pid] || !pos[it.id]) return;
+      const a = pos[pid], b = pos[it.id];
+      const x1 = a.x + W / 2, y1 = a.y + H, x2 = b.x + W / 2, y2 = b.y, my = (y1 + y2) / 2;
+      const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      p.setAttribute("d", `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`);
+      if (group.length > 1) p.classList.add("or");
+      svg.appendChild(p); pathEls.push({ p, from: pid, to: it.id });
+    })));
+  });
+
+  // ---------- render state
+  const budgetIn = document.getElementById("budget");
+  budgetIn.value = fmt(state.budget);
+  budgetIn.addEventListener("input", () => { state.budget = parseFloat(budgetIn.value) || 0; save(); refresh(); });
+  function refresh() {
+    const sp = spent(), rem = state.budget - sp;
+    document.getElementById("spent").textContent = fmt(sp);
+    const r = document.getElementById("remaining"); r.textContent = fmt(rem); r.classList.toggle("neg", rem < -1e-9);
+    for (const id in nodeEls) {
+      const has = bought.has(id);
+      nodeEls[id].classList.toggle("bought", has);
+      nodeEls[id].classList.toggle("locked", !has && !satisfied(items[id], bought));
+    }
+    pathEls.forEach(({ p, from, to }) => p.classList.toggle("lit", bought.has(from) && bought.has(to)));
+    renderTabs();
+  }
+  document.getElementById("reset").onclick = () => {
+    const d = defaults(); state.budget = d.budget; bought = new Set(d.bought); budgetIn.value = fmt(state.budget); save(); refresh(); hideTip();
+  };
+  document.getElementById("clear").onclick = () => { bought = new Set(); save(); refresh(); hideTip(); };
+
+  // ---------- tabs
+  const bens = [];
+  DATA.trees.forEach(t => { const b = t.benefactor || UNASSIGNED; if (!bens.includes(b)) bens.push(b); });
+  if (bens.includes(UNASSIGNED)) { bens.splice(bens.indexOf(UNASSIGNED), 1); bens.push(UNASSIGNED); }
+  const slugOf = b => b.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  let activeTab = "all";
+  const fromHash = decodeURIComponent(location.hash.slice(1));
+  if (bens.some(b => slugOf(b) === fromHash)) activeTab = fromHash;
+  const tabsEl = document.getElementById("tabs");
+  function benSpent(b) {
+    return [...bought].filter(id => (DATA.trees[treeOf[id]].benefactor || UNASSIGNED) === b)
+      .reduce((s, id) => s + (items[id].cost || 0), 0);
+  }
+  function renderTabs() {
+    const list = [["all", "All", spent()], ...bens.map(b => [slugOf(b), b, benSpent(b)])];
+    tabsEl.innerHTML = list.map(([key, label, pp]) =>
+      `<button data-tab="${esc(key)}" class="${key === activeTab ? "active" : ""}">${esc(label)}<span class="pp">${fmt(pp)} PP</span></button>`).join("");
+    sections.forEach(sec => sec.classList.toggle("hidden", activeTab !== "all" && slugOf(sec.dataset.ben) !== activeTab));
+  }
+  tabsEl.addEventListener("click", e => {
+    const btn = e.target.closest("button[data-tab]"); if (!btn) return;
+    activeTab = btn.dataset.tab; hideTip();
+    history.replaceState(null, "", activeTab === "all" ? location.pathname : "#" + activeTab);
+    renderTabs();
+  });
+
+  // ---------- tooltip
+  const tip = document.getElementById("tip");
+  let tipFor = null, lastTipPos = null;
+  function descHtml(desc) {
+    let html = "", depth = -1;
+    for (const [lvl, text] of desc) {
+      while (depth < lvl) { html += "<ul>"; depth++; }
+      while (depth > lvl) { html += "</ul>"; depth--; }
+      html += `<li>${esc(text)}</li>`;
+    }
+    while (depth-- >= 0) html += "</ul>";
+    return html;
+  }
+  function showTip(id, at) {
+    const it = items[id]; tipFor = id; lastTipPos = at;
+    const has = bought.has(id), ok = satisfied(it, bought);
+    let status;
+    if (has) status = `<div class="status ok">Bought</div>`;
+    else if (it.cost == null) status = `<div class="status no">No price set yet</div>`;
+    else if (!ok) status = `<div class="status no">Requires: ${esc(missingText(it))}</div>`;
+    else status = `<div class="status">Available</div>`;
+    tip.innerHTML =
+      `<h3>${esc(it.name || "(unnamed)")}</h3>` +
+      `<div class="meta"><b>${esc(it.type || kindLabel[it.kind])}</b> · <b>${it.cost == null ? "?" : fmt(it.cost)} PP</b>` +
+      ` · Prereq: <b>${esc(it.prereqText && it.prereqText !== "-" ? it.prereqText : "none")}</b></div>` + status +
+      (it.desc.length ? descHtml(it.desc) : `<div class="meta">No description yet.</div>`) +
+      `<div class="hint">Right-click (or long-press) the talent to ${has ? "refund" : "buy"} it.</div>`;
+    tip.style.display = "block";
+    const r = tip.getBoundingClientRect();
+    let x = at.x + 14, y = at.y + 14;
+    if (x + r.width > innerWidth - 8) x = Math.max(8, at.x - r.width - 14);
+    if (y + r.height > innerHeight - 8) y = Math.max(8, innerHeight - r.height - 8);
+    tip.style.left = x + "px"; tip.style.top = y + "px";
+  }
+  function hideTip() { tip.style.display = "none"; tipFor = null; }
+  document.addEventListener("click", e => { if (!tip.contains(e.target)) hideTip(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") hideTip(); });
+  addEventListener("scroll", hideTip, { passive: true });
+
+  // ---------- toast
+  const toastEl = document.getElementById("toast"); let toastT;
+  function toast(msg, good) {
+    toastEl.textContent = msg; toastEl.className = good ? "good" : ""; toastEl.style.display = "block";
+    clearTimeout(toastT); toastT = setTimeout(() => toastEl.style.display = "none", 2600);
+  }
+
+  document.getElementById("foot").innerHTML =
+    (DATA.rule ? `Rule: ${esc(DATA.rule)}<br>` : "") +
+    `Left-click a talent for details, right-click to buy or refund. Progress is saved in this browser. Data generated ${esc(DATA.generated)}.`;
+  refresh();
+})();
+</script>
+</body>
+</html>
