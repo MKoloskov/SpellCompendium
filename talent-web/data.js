@@ -9,7 +9,7 @@ window.TALENT_DATA = {
    "items": [
     {
      "name": "First Seal of Darkness",
-     "owned": false,
+     "owned": true,
      "cost": 4.5,
      "type": "Milestone Upgrade",
      "prereqText": "-",
@@ -42,7 +42,7 @@ window.TALENT_DATA = {
     },
     {
      "name": "Second Seal of Darkness",
-     "owned": false,
+     "owned": true,
      "cost": 3.5,
      "type": "Major Upgrade",
      "prereqText": "First Seal",
@@ -75,7 +75,7 @@ window.TALENT_DATA = {
     },
     {
      "name": "Third Seal of Darkness",
-     "owned": false,
+     "owned": true,
      "cost": 3.5,
      "type": "Major Upgrade",
      "prereqText": "Second Seal",
@@ -104,7 +104,7 @@ window.TALENT_DATA = {
     },
     {
      "name": "Forbidden Knowledge",
-     "owned": false,
+     "owned": true,
      "cost": 3.0,
      "type": "Major Upgrade",
      "prereqText": "Third Seal of Darkness",
@@ -329,7 +329,7 @@ window.TALENT_DATA = {
    "items": [
     {
      "name": "Poker Face",
-     "owned": false,
+     "owned": true,
      "cost": 1.0,
      "type": "Minor Upgrade",
      "prereqText": "-",
@@ -476,7 +476,7 @@ window.TALENT_DATA = {
    "items": [
     {
      "name": "Obsidian Tomb",
-     "owned": false,
+     "owned": true,
      "cost": 3.0,
      "type": "Major Upgrade",
      "prereqText": "-",
@@ -501,7 +501,7 @@ window.TALENT_DATA = {
     },
     {
      "name": "Black Armor",
-     "owned": false,
+     "owned": true,
      "cost": 2.5,
      "type": "Major Upgrade",
      "prereqText": "-",
@@ -570,7 +570,7 @@ window.TALENT_DATA = {
      "owned": false,
      "cost": 2.0,
      "type": "Major Upgrade",
-     "prereqText": "Black Armor",
+     "prereqText": "Infused Devil",
      "desc": [
       [
        0,
@@ -580,14 +580,12 @@ window.TALENT_DATA = {
      "id": "black-armor--living-armor",
      "kind": "major",
      "prereq": {
-      "all": [
-       [
-        "black-armor--black-armor"
-       ]
-      ],
+      "all": [],
       "any": 0,
       "anyFrom": [],
-      "unresolved": []
+      "unresolved": [
+       "Infused Devil"
+      ]
      }
     },
     {
@@ -640,7 +638,7 @@ window.TALENT_DATA = {
    "items": [
     {
      "name": "Vagabond's Grit",
-     "owned": false,
+     "owned": true,
      "cost": 0.5,
      "type": "Minor Upgrade",
      "prereqText": "-",
@@ -665,7 +663,7 @@ window.TALENT_DATA = {
     },
     {
      "name": "Explorer's Instinct",
-     "owned": false,
+     "owned": true,
      "cost": 1.0,
      "type": "Minor Upgrade",
      "prereqText": "-",
@@ -994,7 +992,7 @@ window.TALENT_DATA = {
    "items": [
     {
      "name": "Thirsting Blade",
-     "owned": false,
+     "owned": true,
      "cost": 3.5,
      "type": "Major Upgrade",
      "prereqText": "-",
@@ -1178,7 +1176,7 @@ window.TALENT_DATA = {
    "items": [
     {
      "name": "Hellfire Blast",
-     "owned": false,
+     "owned": true,
      "cost": 3.0,
      "type": "Major Upgrade",
      "prereqText": "-",
@@ -1602,7 +1600,7 @@ window.TALENT_DATA = {
    "items": [
     {
      "name": "Soul Perception",
-     "owned": false,
+     "owned": true,
      "cost": 0.5,
      "type": "Minor Upgrade",
      "prereqText": "-",

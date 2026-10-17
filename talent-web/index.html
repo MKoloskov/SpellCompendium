@@ -55,6 +55,7 @@
   .node .cost { font-size: 12px; margin-top: 3px; opacity: .9; }
   .node.locked { filter: saturate(.35) brightness(.6); }
   .node.bought { border-color: var(--gold); box-shadow: 0 0 10px 2px #ffd34daa, 0 0 2px 1px var(--gold) inset; }
+  .node.owned::after { content: "✓"; position: absolute; top: 2px; right: 5px; color: var(--gold); font-weight: bold; font-size: 13px; }
   .node:hover { filter: brightness(1.15); }
   .node.locked:hover { filter: saturate(.5) brightness(.75); }
   .k-minor { --kind: var(--minor); } .k-major { --kind: var(--major); } .k-milestone { --kind: var(--milestone); } .k-unset { --kind: var(--unset); }
@@ -84,13 +85,13 @@
   <div class="stat"><span class="lbl">Spent</span><span class="val" id="spent">0</span></div>
   <div class="stat"><span class="lbl">Remaining</span><span class="val" id="remaining">0</span></div>
   <button id="reset" title="Bought = talents marked (+) in the note">Reset to note</button>
-  <button id="clear" title="Refund everything">Refund all</button>
+  <button id="clear" title="Refund everything except talents marked (+) in the note">Refund planned</button>
   <div class="legend">
     <span style="--c: var(--minor)">Minor</span>
     <span style="--c: var(--major)">Major</span>
     <span style="--c: var(--milestone)">Milestone</span>
     <span style="--c: var(--unset)">Type not set</span>
-    <span style="--c: transparent; --b: var(--gold)">Bought</span>
+    <span style="--c: transparent; --b: var(--gold)">Bought (✓ = marked (+) in the note)</span>
   </div>
 </header>
 <nav id="tabs"></nav>
@@ -121,8 +122,11 @@
   let state;
   try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) { state = null; }
   if (!state || !Array.isArray(state.bought)) state = defaults();
+  // Talents marked (+) in the note are already bought: always counted as spent, never refundable.
+  const owned = new Set(defaults().bought), ownedCost = defaults().budget;
   state.bought = state.bought.filter(id => items[id]);
-  let bought = new Set(state.bought);
+  if (!(state.budget >= ownedCost)) state.budget = ownedCost;
+  let bought = new Set([...state.bought, ...owned]);
   const save = () => localStorage.setItem(KEY, JSON.stringify({ budget: state.budget, bought: [...bought] }));
   const spent = () => [...bought].reduce((s, id) => s + (items[id].cost || 0), 0);
 
@@ -158,6 +162,7 @@
   }
   function toggle(id) {
     const it = items[id];
+    if (owned.has(id)) return toast(`${it.name} is already bought (marked (+) in the note).`);
     if (bought.has(id)) {
       const deps = dependents(it);
       if (deps.length) return toast(`Can't refund ${it.name}: ${deps.join(", ")} depends on it.`);
@@ -216,7 +221,8 @@
         const x = x0 + k * (W + GX), y = PAD + r * (H + GY);
         pos[it.id] = { x, y };
         const el = document.createElement("div");
-        el.className = `node k-${it.kind}`;
+        el.className = `node k-${it.kind}` + (it.owned ? " owned" : "");
+        if (it.owned) el.title = "Already bought (marked (+) in the note)";
         el.style.cssText = `left:${x}px;top:${y}px;width:${W}px;height:${H}px`;
         el.innerHTML = `<div class="nm">${esc(it.name || "(unnamed)")}</div><div class="cost">${it.cost == null ? "? PP" : fmt(it.cost) + " PP"}</div>`;
         el.addEventListener("click", e => { e.stopPropagation(); showTip(it.id, { x: e.clientX, y: e.clientY }); });
@@ -258,7 +264,7 @@
   document.getElementById("reset").onclick = () => {
     const d = defaults(); state.budget = d.budget; bought = new Set(d.bought); budgetIn.value = fmt(state.budget); save(); refresh(); hideTip();
   };
-  document.getElementById("clear").onclick = () => { bought = new Set(); save(); refresh(); hideTip(); };
+  document.getElementById("clear").onclick = () => { bought = new Set(owned); save(); refresh(); hideTip(); };
 
   // ---------- tabs
   const bens = [];
@@ -312,7 +318,7 @@
       `<div class="meta"><b>${esc(it.type || kindLabel[it.kind])}</b> · <b>${it.cost == null ? "?" : fmt(it.cost)} PP</b>` +
       ` · Prereq: <b>${esc(it.prereqText && it.prereqText !== "-" ? it.prereqText : "none")}</b></div>` + status +
       (it.desc.length ? descHtml(it.desc) : `<div class="meta">No description yet.</div>`) +
-      `<div class="hint">Right-click (or long-press) the talent to ${has ? "refund" : "buy"} it.</div>`;
+      (it.owned ? `<div class="hint">Already bought (marked (+) in the note).</div>` : `<div class="hint">Right-click (or long-press) the talent to ${has ? "refund" : "buy"} it.</div>`);
     tip.style.display = "block";
     const r = tip.getBoundingClientRect();
     let x = at.x + 14, y = at.y + 14;
