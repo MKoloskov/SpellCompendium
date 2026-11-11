@@ -35,7 +35,18 @@
   nav#tabs button:hover { color: var(--text); }
   nav#tabs button.active { color: #f3c9a0; border-color: var(--gold); border-bottom-color: var(--panel); background: #2a2122; }
   .tree.hidden { display: none; }
-  main { display: flex; flex-wrap: wrap; gap: 22px; padding: 22px; align-items: flex-start; }
+  main { position: relative; display: flex; flex-wrap: wrap; gap: 22px; padding: 22px; align-items: flex-start; }
+  .hub { flex: 1 0 100%; display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 34px; padding-bottom: 10px; }
+  .hub.hidden { display: none; }
+  .hub .tree.side { margin-top: 70px; }
+  .hub .tree.center { border-color: var(--gold); box-shadow: 0 0 24px #ffd34d22; }
+  .hub .tree.center h2 { font-size: 18px; }
+  #xlinks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; z-index: 1; }
+  #xlinks path { fill: none; stroke: #c98a3a; stroke-width: 2; stroke-dasharray: 2 5; stroke-linecap: round; opacity: .85; }
+  #xlinks path.or { stroke-dasharray: 8 6; }
+  #xlinks path.lit { stroke: var(--gold); opacity: 1; }
+  #xlinks circle { fill: #c98a3a; } #xlinks circle.lit { fill: var(--gold); }
+  .node .xreq { position: absolute; left: 5px; top: 2px; font-size: 11px; color: #ffcf8a; }
   .tree { background: var(--panel); border: 1px solid var(--panel-edge); border-radius: 10px; padding: 12px 14px 16px; }
   .tree h2 { margin: 0 0 2px; font-size: 16px; color: #f3c9a0; }
   .tree .sub { margin: 0 0 10px; color: var(--muted); font-size: 12px; max-width: 520px; }
@@ -46,7 +57,7 @@
   .canvas path.or { stroke-dasharray: 6 5; }
   .canvas path.lit { stroke: var(--gold); }
   .node {
-    position: absolute; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+    position: absolute; z-index: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
     padding: 6px 8px; border-radius: 8px; background: var(--kind); border: 3px solid #00000055; cursor: pointer; user-select: none;
     box-shadow: 0 2px 6px #0008; transition: box-shadow .15s, border-color .15s, filter .15s;
   }
@@ -92,6 +103,7 @@
     <span style="--c: var(--milestone)">Milestone</span>
     <span style="--c: var(--unset)">Type not set</span>
     <span style="--c: transparent; --b: var(--gold)">Bought (✓ = marked (+) in the note)</span>
+    <span style="--c: #c98a3a">⇄ = prereq from another tree (dotted line in the center group)</span>
   </div>
 </header>
 <nav id="tabs"></nav>
@@ -106,6 +118,8 @@
   const DATA = window.TALENT_DATA;
   const KEY = "elara-talents-v1";
   const W = 170, H = 78, GX = 26, GY = 50, PAD = 6, MAXC = 5;
+  // Trees shown front and center (tree keys from data.js): the center tree with the others hanging on its sides.
+  const HUB = { center: "infernal-fervor", left: "infernal-arms", right: "weapon-master" };
 
   const items = {}, treeOf = {};
   DATA.trees.forEach((t, ti) => t.items.forEach(it => { items[it.id] = it; treeOf[it.id] = ti; }));
@@ -117,17 +131,21 @@
   // ---------- state
   const defaults = () => {
     const bought = Object.values(items).filter(i => i.owned).map(i => i.id);
-    return { budget: bought.reduce((s, id) => s + (items[id].cost || 0), 0), bought };
+    const ownedSum = bought.reduce((s, id) => s + (items[id].cost || 0), 0);
+    // "Points Total: N" in the note sets the budget; without it, fall back to the cost of owned talents.
+    return { budget: DATA.pointsTotal != null ? DATA.pointsTotal : ownedSum, ownedSum, bought };
   };
   let state;
   try { state = JSON.parse(localStorage.getItem(KEY)); } catch (e) { state = null; }
   if (!state || !Array.isArray(state.bought)) state = defaults();
   // Talents marked (+) in the note are already bought: always counted as spent, never refundable.
-  const owned = new Set(defaults().bought), ownedCost = defaults().budget;
+  const owned = new Set(defaults().bought), ownedCost = defaults().ownedSum;
+  // When the note's Points Total changes, adopt the new value over whatever was saved in the browser.
+  if (DATA.pointsTotal != null && state.noteTotal !== DATA.pointsTotal) state.budget = DATA.pointsTotal;
   state.bought = state.bought.filter(id => items[id]);
   if (!(state.budget >= ownedCost)) state.budget = ownedCost;
   let bought = new Set([...state.bought, ...owned]);
-  const save = () => localStorage.setItem(KEY, JSON.stringify({ budget: state.budget, bought: [...bought] }));
+  const save = () => localStorage.setItem(KEY, JSON.stringify({ budget: state.budget, noteTotal: DATA.pointsTotal, bought: [...bought] }));
   const spent = () => [...bought].reduce((s, id) => s + (items[id].cost || 0), 0);
 
   // ---------- rules
@@ -146,11 +164,12 @@
     return DATA.trees[treeOf[it.id]].items.map(o => o.id).filter(id => id !== it.id && !named.has(id));
   }
   function missingText(it) {
-    const parts = it.prereq.all.filter(g => !g.some(id => bought.has(id))).map(g => g.map(id => items[id].name).join(" or "));
+    const nm = id => items[id].name + (treeOf[id] !== treeOf[it.id] ? ` (${DATA.trees[treeOf[id]].title.split(/\s+Tree\b/)[0]} tree)` : "");
+    const parts = it.prereq.all.filter(g => !g.some(id => bought.has(id))).map(g => g.map(nm).join(" or "));
     if (it.prereq.any) {
       const pool = anyPool(it), have = pool.filter(id => bought.has(id)).length;
       if (have < it.prereq.any) parts.push((it.prereq.anyFrom || []).length
-        ? `any ${it.prereq.any} of ${pool.map(id => items[id].name).join(", ")}`
+        ? `any ${it.prereq.any} of ${pool.map(nm).join(", ")}`
         : `any ${it.prereq.any} other talents in this tree`);
     }
     (it.prereq.unresolved || []).forEach(u => parts.push(`"${u}" (not found in the note)`));
@@ -181,19 +200,27 @@
   // ---------- layout
   const main = document.getElementById("trees");
   const UNASSIGNED = "Unassigned", sections = [];
-  const nodeEls = {}, pathEls = [];
+  const nodeEls = {}, pathEls = [], xEdges = [];
+  const keyIdx = Object.fromEntries(DATA.trees.map((t, i) => [t.key, i]));
+  const hubKeys = [HUB.left, HUB.center, HUB.right].filter(k => k in keyIdx);
+  const hubEl = document.createElement("div"); hubEl.className = "hub";
+  if (hubKeys.length) main.appendChild(hubEl);
+  const hubSecs = {};
   DATA.trees.forEach((t, ti) => {
     const sec = document.createElement("section"); sec.className = "tree";
     sec.dataset.ben = t.benefactor || UNASSIGNED; sections.push(sec);
     const m = t.title.match(/^(.*?)\s*(?:[-:]\s+|:\s*)(about.*)$/i);
     sec.innerHTML = `<h2>${esc(m ? m[1] : t.title)}</h2>` + (m ? `<p class="sub">${esc(m[2].replace(/:$/, ""))}</p>` : "");
-    main.appendChild(sec);
+    if (hubKeys.includes(t.key)) { sec.classList.add(t.key === HUB.center ? "center" : "side"); hubSecs[t.key] = sec; }
+    else main.appendChild(sec);
     if (!t.items.length) { sec.insertAdjacentHTML("beforeend", `<div class="empty">No talents yet</div>`); return; }
 
     const depth = {};
     const parentsOf = it => [...it.prereq.all.flat(), ...(it.prereq.anyFrom || [])].filter(id => items[id] && treeOf[id] === ti);
     const d = (it, seen = new Set()) => {
       if (depth[it.id] != null) return depth[it.id];
+      // "Tier: N" in the note pins the talent to row N (tier 1 = top row); higher tiers sit lower.
+      if (it.tier != null) return depth[it.id] = Math.max(0, it.tier - 1);
       seen.add(it.id);
       const ps = parentsOf(it).filter(id => !seen.has(id));
       return depth[it.id] = ps.length ? 1 + Math.max(...ps.map(id => d(items[id], seen))) : 0;
@@ -213,13 +240,14 @@
     svg.setAttribute("width", width); svg.setAttribute("height", height);
     cv.appendChild(svg); sec.appendChild(cv);
 
-    const pos = {};
+    const pos = {}, rowXs = [];
     rows.forEach((row, r) => {
       if (!row) return;
       const rw = row.length * (W + GX) - GX, x0 = (width - rw) / 2;
+      rowXs[r] = row.map((_, k) => x0 + k * (W + GX));
       row.forEach((it, k) => {
         const x = x0 + k * (W + GX), y = PAD + r * (H + GY);
-        pos[it.id] = { x, y };
+        pos[it.id] = { x, y, r };
         const el = document.createElement("div");
         el.className = `node k-${it.kind}` + (it.owned ? " owned" : "");
         if (it.owned) el.title = "Already bought (marked (+) in the note)";
@@ -234,16 +262,74 @@
         cv.appendChild(el); nodeEls[it.id] = el;
       });
     });
+    t.items.forEach(it => {
+      const xs = it.prereq.all.flat().filter(id => items[id] && treeOf[id] !== ti);
+      xs.forEach(pid => xEdges.push({ from: pid, to: it.id, or: it.prereq.all.find(g => g.includes(pid)).length > 1 }));
+      if (xs.length && nodeEls[it.id]) { const b = document.createElement("span"); b.className = "xreq"; b.textContent = "⇄"; b.title = "Needs: " + xs.map(id => items[id].name).join(", "); nodeEls[it.id].appendChild(b); }
+    });
     t.items.forEach(it => [...it.prereq.all, ...((it.prereq.anyFrom || []).length ? [it.prereq.anyFrom] : [])].forEach(group => group.forEach(pid => {
       if (!pos[pid] || !pos[it.id]) return;
       const a = pos[pid], b = pos[it.id];
-      const x1 = a.x + W / 2, y1 = a.y + H, x2 = b.x + W / 2, y2 = b.y, my = (y1 + y2) / 2;
+      const x1 = a.x + W / 2, y1 = a.y + H, x2 = b.x + W / 2, y2 = b.y;
+      // Lines that skip rows pass through the gaps between talents instead of behind them.
+      const pts = [[x1, y1]];
+      for (let r = Math.min(a.r, b.r) + 1; r < Math.max(a.r, b.r); r++) {
+        const xs = rowXs[r]; if (!xs) continue;
+        const top = PAD + r * (H + GY), f = (top + H / 2 - y1) / (y2 - y1 || 1);
+        let gx = x1 + (x2 - x1) * f;
+        if (xs.some(x => gx > x - 6 && gx < x + W + 6)) {
+          const gaps = [xs[0] - GX / 2, ...xs.map(x => x + W + GX / 2)];
+          gx = gaps.reduce((best, g) => Math.abs(g - gx) < Math.abs(best - gx) ? g : best);
+        }
+        pts.push([gx, top - 4], [gx, top + H + 4]);
+      }
+      pts.push([x2, y2]);
+      let d = `M${pts[0][0]},${pts[0][1]}`;
+      for (let i = 1; i < pts.length; i++) {
+        const [px, py] = pts[i - 1], [qx, qy] = pts[i];
+        if (px === qx) { d += ` L${qx},${qy}`; continue; }
+        const my = (py + qy) / 2; d += ` C${px},${my} ${qx},${my} ${qx},${qy}`;
+      }
       const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      p.setAttribute("d", `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`);
+      p.setAttribute("d", d);
       if (group.length > 1) p.classList.add("or");
       svg.appendChild(p); pathEls.push({ p, from: pid, to: it.id });
     })));
   });
+
+  hubKeys.forEach(k => hubEl.appendChild(hubSecs[k]));
+
+  // ---------- cross-tree links (drawn over the page, between trees)
+  const xsvg = document.createElementNS("http://www.w3.org/2000/svg", "svg"); xsvg.id = "xlinks"; main.appendChild(xsvg);
+  function drawX() {
+    xsvg.innerHTML = "";
+    const base = main.getBoundingClientRect();
+    xEdges.forEach(e => {
+      const a = nodeEls[e.from], b = nodeEls[e.to];
+      if (!a || !b || !a.offsetParent || !b.offsetParent) return;   // hidden by the current tab
+      // Lines are drawn only between the hub trees; elsewhere the ⇄ badge and tooltip show the prereq.
+      if (!hubKeys.includes(DATA.trees[treeOf[e.from]].key) || !hubKeys.includes(DATA.trees[treeOf[e.to]].key)) return;
+      const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+      const ac = ra.left + ra.width / 2, bc = rb.left + rb.width / 2;
+      let x1, y1, x2, y2, d;
+      if (Math.abs(ac - bc) > (ra.width + rb.width) / 2) {          // side by side: connect facing edges
+        const dir = bc > ac ? 1 : -1;
+        x1 = (dir > 0 ? ra.right : ra.left) - base.left; y1 = ra.top + ra.height / 2 - base.top;
+        x2 = (dir > 0 ? rb.left : rb.right) - base.left; y2 = rb.top + rb.height / 2 - base.top;
+        const mx = (x1 + x2) / 2; d = `M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`;
+      } else {                                                      // stacked: bottom to top
+        x1 = ac - base.left; y1 = ra.bottom - base.top; x2 = bc - base.left; y2 = rb.top - base.top;
+        const my = (y1 + y2) / 2; d = `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+      }
+      const lit = bought.has(e.from) && bought.has(e.to);
+      const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      p.setAttribute("d", d); if (e.or) p.classList.add("or"); if (lit) p.classList.add("lit");
+      const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      c.setAttribute("cx", x2); c.setAttribute("cy", y2); c.setAttribute("r", 4); if (lit) c.classList.add("lit");
+      xsvg.append(p, c);
+    });
+  }
+  new ResizeObserver(() => drawX()).observe(main);
 
   // ---------- render state
   const budgetIn = document.getElementById("budget");
@@ -259,7 +345,7 @@
       nodeEls[id].classList.toggle("locked", !has && !satisfied(items[id], bought));
     }
     pathEls.forEach(({ p, from, to }) => p.classList.toggle("lit", bought.has(from) && bought.has(to)));
-    renderTabs();
+    renderTabs(); drawX();
   }
   document.getElementById("reset").onclick = () => {
     const d = defaults(); state.budget = d.budget; bought = new Set(d.bought); budgetIn.value = fmt(state.budget); save(); refresh(); hideTip();
@@ -283,13 +369,18 @@
     const list = [["all", "All", spent()], ...bens.map(b => [slugOf(b), b, benSpent(b)])];
     tabsEl.innerHTML = list.map(([key, label, pp]) =>
       `<button data-tab="${esc(key)}" class="${key === activeTab ? "active" : ""}">${esc(label)}<span class="pp">${fmt(pp)} PP</span></button>`).join("");
-    sections.forEach(sec => sec.classList.toggle("hidden", activeTab !== "all" && slugOf(sec.dataset.ben) !== activeTab));
+    const vis = sec => activeTab === "all" || slugOf(sec.dataset.ben) === activeTab;
+    sections.forEach(sec => sec.classList.toggle("hidden", !vis(sec)));
+    // The center tree always shows alongside its side trees.
+    const c = hubSecs[HUB.center];
+    if (c && Object.entries(hubSecs).some(([k, s]) => k !== HUB.center && vis(s))) c.classList.remove("hidden");
+    hubEl.classList.toggle("hidden", Object.values(hubSecs).every(s => s.classList.contains("hidden")));
   }
   tabsEl.addEventListener("click", e => {
     const btn = e.target.closest("button[data-tab]"); if (!btn) return;
     activeTab = btn.dataset.tab; hideTip();
     history.replaceState(null, "", activeTab === "all" ? location.pathname : "#" + activeTab);
-    renderTabs();
+    renderTabs(); drawX();
   });
 
   // ---------- tooltip
@@ -316,7 +407,7 @@
     tip.innerHTML =
       `<h3>${esc(it.name || "(unnamed)")}</h3>` +
       `<div class="meta"><b>${esc(it.type || kindLabel[it.kind])}</b> · <b>${it.cost == null ? "?" : fmt(it.cost)} PP</b>` +
-      ` · Prereq: <b>${esc(it.prereqText && it.prereqText !== "-" ? it.prereqText : "none")}</b></div>` + status +
+      (it.tier != null ? ` · Tier <b>${it.tier}</b>` : "") + ` · Prereq: <b>${esc(it.prereqText && it.prereqText !== "-" ? it.prereqText : "none")}</b></div>` + status +
       (it.desc.length ? descHtml(it.desc) : `<div class="meta">No description yet.</div>`) +
       (it.owned ? `<div class="hint">Already bought (marked (+) in the note).</div>` : `<div class="hint">Right-click (or long-press) the talent to ${has ? "refund" : "buy"} it.</div>`);
     tip.style.display = "block";
@@ -339,7 +430,7 @@
   }
 
   document.getElementById("foot").innerHTML =
-    (DATA.rule ? `Rule: ${esc(DATA.rule)}<br>` : "") +
+    (DATA.rule ? `Rule: ${esc(DATA.rule.replace(/^Rule:\s*/i, ""))}<br>` : "") +
     `Left-click a talent for details, right-click to buy or refund. Progress is saved in this browser. Data generated ${esc(DATA.generated)}.`;
   refresh();
 })();
