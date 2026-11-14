@@ -1475,7 +1475,7 @@ window.TALENT_DATA = {
     },
     {
      "name": "Explorer's Instinct",
-     "owned": true,
+     "owned": false,
      "cost": 1.0,
      "type": "Minor Upgrade",
      "prereqText": "-",
