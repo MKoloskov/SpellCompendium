@@ -119,7 +119,7 @@
   const KEY = "elara-talents-v1";
   const W = 170, H = 78, GX = 26, GY = 50, PAD = 6, MAXC = 5;
   // Trees shown front and center (tree keys from data.js): the center tree with the others hanging on its sides.
-  const HUB = { center: "infernal-fervor", left: "infernal-arms", right: "weapon-master" };
+  const HUB = { center: "infernal-fervor", left: "infernal-arms", right: "weapon-master", centerCols: 3 };
 
   const items = {}, treeOf = {};
   DATA.trees.forEach((t, ti) => t.items.forEach(it => { items[it.id] = it; treeOf[it.id] = ti; }));
@@ -229,7 +229,8 @@
     const byDepth = [];
     t.items.forEach(it => (byDepth[depth[it.id]] ||= []).push(it));
     const rows = [];
-    byDepth.forEach(r => { if (r) for (let i = 0; i < r.length; i += MAXC) rows.push(r.slice(i, i + MAXC)); });
+    const maxc = t.key === HUB.center ? HUB.centerCols : MAXC;   // keep the center tree narrow so the side trees fit beside it
+    byDepth.forEach(r => { if (r) for (let i = 0; i < r.length; i += maxc) rows.push(r.slice(i, i + maxc)); });
     const cols = Math.max(...rows.map(r => r ? r.length : 0));
     const width = Math.max(cols * (W + GX) - GX + 2 * PAD, 240);
     const height = rows.length * (H + GY) - GY + 2 * PAD;
