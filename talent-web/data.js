@@ -119,7 +119,7 @@ window.TALENT_DATA = {
     },
     {
      "name": "Forbidden Knowledge",
-     "owned": true,
+     "owned": false,
      "cost": 3.0,
      "type": "Major Upgrade",
      "prereqText": "Third Seal of Darkness",

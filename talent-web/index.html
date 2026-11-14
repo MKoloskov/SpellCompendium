@@ -112,7 +112,7 @@
 <div id="tip"></div>
 <div id="toast"></div>
 
-<script src="data.js"></script>
+<script>document.write('<script src="data.js?v=' + Date.now() + '"><\/script>');  // always load the latest data</script>
 <script>
 (() => {
   const DATA = window.TALENT_DATA;
@@ -142,10 +142,13 @@
   const owned = new Set(defaults().bought), ownedCost = defaults().ownedSum;
   // When the note's Points Total changes, adopt the new value over whatever was saved in the browser.
   if (DATA.pointsTotal != null && state.noteTotal !== DATA.pointsTotal) state.budget = DATA.pointsTotal;
-  state.bought = state.bought.filter(id => items[id]);
+  // Saved purchases may include talents that were (+) in the note at the time. If the note no longer marks them,
+  // drop them so they show as available again. Old saves didn't record this, so they keep only the (+) talents.
+  const prevOwned = Array.isArray(state.owned) ? new Set(state.owned) : null;
+  state.bought = state.bought.filter(id => items[id] && (prevOwned ? !(prevOwned.has(id) && !owned.has(id)) : owned.has(id)));
   if (!(state.budget >= ownedCost)) state.budget = ownedCost;
   let bought = new Set([...state.bought, ...owned]);
-  const save = () => localStorage.setItem(KEY, JSON.stringify({ budget: state.budget, noteTotal: DATA.pointsTotal, bought: [...bought] }));
+  const save = () => localStorage.setItem(KEY, JSON.stringify({ budget: state.budget, noteTotal: DATA.pointsTotal, owned: [...owned], bought: [...bought] }));
   const spent = () => [...bought].reduce((s, id) => s + (items[id].cost || 0), 0);
 
   // ---------- rules
@@ -433,7 +436,7 @@
   document.getElementById("foot").innerHTML =
     (DATA.rule ? `Rule: ${esc(DATA.rule.replace(/^Rule:\s*/i, ""))}<br>` : "") +
     `Left-click a talent for details, right-click to buy or refund. Progress is saved in this browser. Data generated ${esc(DATA.generated)}.`;
-  refresh();
+  save(); refresh();
 })();
 </script>
 </body>
