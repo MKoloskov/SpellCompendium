@@ -145,12 +145,12 @@ window.TALENT_DATA = {
      }
     },
     {
-     "name": "Dark Bargain",
+     "name": "Fourth Seal of Darkness",
      "owned": false,
-     "cost": 6.0,
-     "type": "Milestone Upgrade",
+     "cost": 2.5,
+     "type": "Major Upgrade",
      "prereqText": "Third Seal of Darkness",
-     "tier": 5,
+     "tier": 4,
      "desc": [
       [
        0,
@@ -158,15 +158,73 @@ window.TALENT_DATA = {
       ],
       [
        0,
-       "Spells Known: +2 (7 total)"
+       "Spells Known: +1 (6-7 total)"
+      ]
+     ],
+     "id": "seal-of-darkness--fourth-seal-of-darkness",
+     "kind": "major",
+     "tree": "seal-of-darkness",
+     "prereq": {
+      "all": [
+       [
+        "seal-of-darkness--third-seal-of-darkness"
+       ]
+      ],
+      "any": 0,
+      "anyFrom": [],
+      "unresolved": []
+     }
+    },
+    {
+     "name": "Dark Bargain",
+     "owned": false,
+     "cost": 2.5,
+     "type": "Milestone Upgrade",
+     "prereqText": "Third Seal of Darkness, any one of (Fourth Seal, Forbidden Knowledge, Expanded Knowledge)",
+     "tier": 5,
+     "desc": [
+      [
+       0,
+       "Dark Bargain: May spend some HP to regain a Spell Slot:  (max level * d6) removed from maxHP until long rest, true damage, ignores temp HP"
       ],
       [
        0,
-       "May spend some HP to regain a Spell Slot:  (max level * d6) removed from maxHP until long rest, true damage, ignores temp HP"
+       "Dark Bargain can be used (CHA/2, rounded up) times per day"
       ]
      ],
      "id": "seal-of-darkness--dark-bargain",
      "kind": "milestone",
+     "tree": "seal-of-darkness",
+     "prereq": {
+      "all": [
+       [
+        "seal-of-darkness--third-seal-of-darkness"
+       ]
+      ],
+      "any": 1,
+      "anyFrom": [
+       "seal-of-darkness--fourth-seal-of-darkness",
+       "seal-of-darkness--forbidden-knowledge",
+       "seal-of-darkness--expanded-knowledge"
+      ],
+      "unresolved": []
+     }
+    },
+    {
+     "name": "Expanded Knowledge",
+     "owned": false,
+     "cost": 0.5,
+     "type": "Minor Upgrade",
+     "prereqText": "Third Seal of Darkness",
+     "tier": 4,
+     "desc": [
+      [
+       0,
+       "Spells Known: +1 (6-7 total)"
+      ]
+     ],
+     "id": "seal-of-darkness--expanded-knowledge",
+     "kind": "minor",
      "tree": "seal-of-darkness",
      "prereq": {
       "all": [
@@ -200,7 +258,7 @@ window.TALENT_DATA = {
       ],
       [
        0,
-       "Number of rays increases on 5th, 11th & 17th levels"
+       "Number of rays increases on 5th, 11th & 17th character levels"
       ]
      ],
      "id": "hellfire--hellfire-blast",
@@ -216,7 +274,7 @@ window.TALENT_DATA = {
     {
      "name": "Scorching Flames",
      "owned": false,
-     "cost": 3.5,
+     "cost": 3.0,
      "type": "Major Upgrade",
      "prereqText": "Hellfire Blast",
      "tier": 2,
@@ -228,6 +286,14 @@ window.TALENT_DATA = {
       [
        0,
        "Fail sets the target on fire: burning target receives DMG at the beginning of each turn and makes a new CHA save at the end of turn. Successful save removes the effect."
+      ],
+      [
+       0,
+       "Save is made per ATTACK, not per beam: so even one beam that hits forces the save vs. this effect."
+      ],
+      [
+       0,
+       "Burning effects on one target do not stack; only first successful application is counted"
       ],
       [
        0,
@@ -275,7 +341,7 @@ window.TALENT_DATA = {
     {
      "name": "Blast of the Hunter",
      "owned": false,
-     "cost": 2.5,
+     "cost": 2.0,
      "type": "Major Upgrade",
      "prereqText": "Hellfire Blast",
      "tier": 2,
@@ -286,11 +352,11 @@ window.TALENT_DATA = {
       ],
       [
        0,
-       "Hits with Eldritch Blast now halves Movement for 1 turn"
+       "Hits with Eldritch Blast now halves Movement for 1 turn. This effect doesn't stack with itself or other movement-impairing effects of divine nature."
       ],
       [
        0,
-       "[1 Con] After dealing initial damage, you may take CON DMG to deal +1d10 DMG."
+       "[1 Con] After dealing initial damage, you may take CON DMG to deal +1d10 DMG (only for one beam per attack, declared before getting the final DM verdict on whether the beam hits)"
       ]
      ],
      "id": "hellfire--blast-of-the-hunter",
@@ -337,7 +403,7 @@ window.TALENT_DATA = {
     {
      "name": "Protective Cloak",
      "owned": false,
-     "cost": 3.0,
+     "cost": 2.5,
      "type": "Major Upgrade",
      "prereqText": "Cloak of Flames",
      "tier": 3,
@@ -348,7 +414,7 @@ window.TALENT_DATA = {
       ],
       [
        0,
-       "As a Reaction, you can use it as a shield against an attack, gaining Resistance vs Physical & Fire damage and dealing full Eldritch Blast damage to the creaure if it hits you in melee"
+       "As a Reaction, you can use it as a shield against an attack, gaining Resistance vs Physical & Fire damage versus incoming attack and dealing full Eldritch Blast damage (per one beam) to the creaure if it hits you in melee"
       ],
       [
        0,
@@ -477,7 +543,11 @@ window.TALENT_DATA = {
       ],
       [
        0,
-       "Gain a heightened pain threshold; normal pain doesn't bother you anymore"
+       "Gain a heightened pain threshold (ADV on Pain saves)"
+      ],
+      [
+       0,
+       "Regeneration stops at 0 HP"
       ]
      ],
      "id": "tenacity--regeneration-i",
@@ -504,7 +574,11 @@ window.TALENT_DATA = {
       ],
       [
        0,
-       "Gain immunity to pain"
+       "At 0 HP, regeneration is 1/2 rounds"
+      ],
+      [
+       0,
+       "Gain immunity to pain (immunity to Pain saves, excluding special cases like divine attacks of opposing alignment)"
       ]
      ],
      "id": "tenacity--regeneration-ii",
@@ -531,7 +605,11 @@ window.TALENT_DATA = {
      "desc": [
       [
        0,
-       "regeneration further improves, reaching 1 HP/3 min out of combat & 2 HP/round in combat"
+       "Regeneration further improves, reaching 1 HP/3 min out of combat & 2 HP/round in combat"
+      ],
+      [
+       0,
+       "At 0 HP, regeneration is 1/round"
       ]
      ],
      "id": "tenacity--regeneration-iii",
@@ -558,7 +636,11 @@ window.TALENT_DATA = {
      "desc": [
       [
        0,
-       "regeneration further improves, reaching 1 HP min out of combat & 3 HP/round in combat"
+       "Regeneration further improves, reaching 1 HP min out of combat & 3 HP/round in combat"
+      ],
+      [
+       0,
+       "Regeneration doesn't change at 0 HP"
       ]
      ],
      "id": "tenacity--regeneration-iv",
@@ -748,42 +830,14 @@ window.TALENT_DATA = {
     {
      "name": "Inscrutable",
      "owned": false,
-     "cost": 4.0,
+     "cost": 2.5,
      "type": "Milestone Upgrade",
-     "prereqText": "Unreadable, Smoke Step",
+     "prereqText": "Unreadable",
      "tier": null,
      "desc": [
       [
        0,
        "Can no longer roll below a 10 on Deception checks vs. mundane means or creatures with Int 6 or less"
-      ],
-      [
-       0,
-       "Can turn to smoke at will:"
-      ],
-      [
-       1,
-       "Full-round action, equivalent to Gaseous Form. Notes/changes:"
-      ],
-      [
-       2,
-       "Complete immunity to physical damage and interactions"
-      ],
-      [
-       2,
-       "No organs (so can't be targeted by spells that affect the body)"
-      ],
-      [
-       2,
-       "No bonuses to STR/DEX/CON saves"
-      ],
-      [
-       2,
-       "Can be broken by Dispel Magic and similar effects, as Gaseous Form can"
-      ],
-      [
-       1,
-       "Can move in this form for CHA hours/day"
       ],
       [
        0,
@@ -797,9 +851,100 @@ window.TALENT_DATA = {
       "all": [
        [
         "inscrutable--unreadable"
-       ],
+       ]
+      ],
+      "any": 0,
+      "anyFrom": [],
+      "unresolved": []
+     }
+    },
+    {
+     "name": "Body of Smoke",
+     "owned": false,
+     "cost": 3.0,
+     "type": "Milestone Upgrade",
+     "prereqText": "Smoke Step",
+     "tier": null,
+     "desc": [
+      [
+       0,
+       "Can turn to smoke at will. Equivalent to Gaseous Form. Notes/changes:"
+      ],
+      [
+       1,
+       "Full-round action to enter/exit"
+      ],
+      [
+       1,
+       "You get no Reactions in this form"
+      ],
+      [
+       1,
+       "No interaction with outside world: can't speak, attack, cast spells etc"
+      ],
+      [
+       1,
+       "Complete immunity to physical damage and interactions"
+      ],
+      [
+       1,
+       "No organs (so can't be targeted by spells that affect the body)"
+      ],
+      [
+       1,
+       "No bonuses to STR/DEX/CON saves"
+      ],
+      [
+       1,
+       "Can be broken by Dispel Magic and similar effects, as Gaseous Form can"
+      ],
+      [
+       0,
+       "Can be in this form for CHA hours/day"
+      ]
+     ],
+     "id": "inscrutable--body-of-smoke",
+     "kind": "milestone",
+     "tree": "inscrutable",
+     "prereq": {
+      "all": [
        [
         "inscrutable--smoke-step"
+       ]
+      ],
+      "any": 0,
+      "anyFrom": [],
+      "unresolved": []
+     }
+    },
+    {
+     "name": "Swift Smokescreen",
+     "owned": false,
+     "cost": 2.5,
+     "type": "Major Upgrade",
+     "prereqText": "Body of Smoke",
+     "tier": null,
+     "desc": [
+      [
+       0,
+       "Can enter the Smoke for as quick as Reaction, and exit as quick as Bonus Action."
+      ],
+      [
+       0,
+       "Must still spend at least 3 actions for enter/exit."
+      ],
+      [
+       0,
+       "You now get Reactions in Smoke Form, that can be used to make a Dodge reaction."
+      ]
+     ],
+     "id": "inscrutable--swift-smokescreen",
+     "kind": "major",
+     "tree": "inscrutable",
+     "prereq": {
+      "all": [
+       [
+        "inscrutable--body-of-smoke"
        ]
       ],
       "any": 0,
@@ -882,7 +1027,11 @@ window.TALENT_DATA = {
      "desc": [
       [
        0,
-       "[1 IF] Life Siphon: gain [CHA] temp HP after dealing damage with the Blade"
+       "[1 IF] Life Siphon: gain [CHA] temp HP after attacking and dealing damage with the Blade"
+      ],
+      [
+       0,
+       "Can be used up to (CHA/2, round up) times per round"
       ]
      ],
      "id": "infernal-fervor--life-siphon",
@@ -910,6 +1059,10 @@ window.TALENT_DATA = {
       [
        0,
        "[1 IF] Glancing Blow: When you make a melee weapon attack and miss, you can immediately repeat your attack against another target within the reach of your weapon"
+      ],
+      [
+       0,
+       "Can be used up to (CHA/2, round up) times per round"
       ]
      ],
      "id": "infernal-fervor--glancing-blow",
@@ -937,6 +1090,10 @@ window.TALENT_DATA = {
       [
        0,
        "[1 IF] Lethal Strike: gain +2 * CHA to hit on the attack. Must be declared BEFORE hearing the DM's verdict about the attack"
+      ],
+      [
+       0,
+       "Can be used up to (CHA/2, round up) times per round"
       ]
      ],
      "id": "infernal-fervor--lethal-strike",
@@ -956,14 +1113,18 @@ window.TALENT_DATA = {
     {
      "name": "Riposte",
      "owned": false,
-     "cost": 3.0,
+     "cost": 2.0,
      "type": "Minor Upgrade",
      "prereqText": "Infernal Fervor",
      "tier": 2,
      "desc": [
       [
        0,
-       "[1 IF] Riposte: gain +2* CHA to parry attempt"
+       "[1 IF] Riposte: gain +2* CHA to parry attempt. Must be declared BEFORE hearing the DM's verdict about the success of the parry"
+      ],
+      [
+       0,
+       "Can be used up to (CHA/2, round up) times per round"
       ]
      ],
      "id": "infernal-fervor--riposte",
@@ -991,6 +1152,10 @@ window.TALENT_DATA = {
       [
        0,
        "[1+ IF] Infernal Smite: you can burn 1 IF to deal extra 1d8 Infernal Flame damage to the target"
+      ],
+      [
+       0,
+       "Can be used up to (CHA/2, round up) times per round"
       ]
      ],
      "id": "infernal-fervor--infernal-smite",
@@ -1110,26 +1275,22 @@ window.TALENT_DATA = {
     {
      "name": "Infernal Arsenal",
      "owned": false,
-     "cost": 4.0,
+     "cost": 3.0,
      "type": "Milestone Upgrade",
      "prereqText": "Infused Blade, Infernal Fervor",
      "tier": 3,
      "desc": [
       [
        0,
-       "Infernal Blade now applies all non-damaging effects of Eldritch Blast to the creature it hits"
+       "Infernal Blade now applies all non-damaging effects of Eldritch Blast to the creature it hits (slow from Hunter's blast, pull/push from Nether Reach)"
       ],
       [
        0,
-       "Gain access to all Favored Weapons of all Contract Benefactors, current & future"
+       "Gain access to all Favored Weapons of all Contract Benefactors, current & future: total of nine weapon forms (longsword, whip + 7 others)"
       ],
       [
        0,
-       "All Infernal Blade forms gain additional qualities baside their basic stats"
-      ],
-      [
-       0,
-       "[1 IF] activates special quality of the current Blade Form. Examples:"
+       "All Infernal Blade forms gain additional qualities beside their basic stats (weapon stats from dandwiki homebrew, such as trip/disarm bonuses, higher critical threat range/multiplier, etc. Example: https://www.dandwiki.com/wiki/Bladed_Whip_(5e_Equipment) )"
       ]
      ],
      "id": "infernal-arms--infernal-arsenal",
@@ -1232,7 +1393,7 @@ window.TALENT_DATA = {
     {
      "name": "Battle Trance",
      "owned": false,
-     "cost": 6.5,
+     "cost": 5.0,
      "type": "Milestone Upgrade",
      "prereqText": "Thirsting Blade, Martial Adept, Infernal Fervor",
      "tier": 3,
@@ -1243,7 +1404,15 @@ window.TALENT_DATA = {
       ],
       [
        1,
+       "You burn [1 IF] per round"
+      ],
+      [
+       1,
        "Any unused Actions get converted to Reactions (thus you may have up to 4 Reactons)"
+      ],
+      [
+       2,
+       "These additional Reactions can be used for anything, except casting spells"
       ],
       [
        1,
@@ -1396,7 +1565,7 @@ window.TALENT_DATA = {
     {
      "name": "Infused Armor",
      "owned": false,
-     "cost": 3.0,
+     "cost": 2.5,
      "type": "Major Upgrade",
      "prereqText": "Black Armor",
      "tier": null,
@@ -1411,15 +1580,15 @@ window.TALENT_DATA = {
       ],
       [
        1,
-       "Light Armor: 10+Dex+1/2 CHA"
+       "Light Armor: 10+Dex+1/2 CHA (ADV on Stealth and Acrobatics)"
       ],
       [
        1,
-       "Medium Armor: 10+Dex+CHA"
+       "Medium Armor: 10+Dex+CHA (3 Dex cap)"
       ],
       [
        1,
-       "Heavy Armor: 10+CHA * 2"
+       "Heavy Armor: 10+CHA * 2 (With DISADV on Stealth, Sleight of Hand, Acrobatics and DEX saves)"
       ],
       [
        0,
@@ -1470,7 +1639,7 @@ window.TALENT_DATA = {
     {
      "name": "Infernal Toughness",
      "owned": false,
-     "cost": 4.0,
+     "cost": 3.5,
      "type": "Milestone Upgrade",
      "prereqText": "Infused Armor, Hardy",
      "tier": null,
@@ -1481,15 +1650,27 @@ window.TALENT_DATA = {
       ],
       [
        0,
+       "Gain ADV vs attempts to shove/knock you down"
+      ],
+      [
+       0,
        "Armor of Shadows gains Aegis"
       ],
       [
        1,
-       "Aegis: after you receive Damage, you gain Resistance to one of its types (of your choosing)"
+       "Aegis:"
       ],
       [
-       0,
-       "Gain ADV vs attempts to shove/knock you down"
+       2,
+       "After you receive Damage, you gain Resistance to one of its types (of your choosing)"
+      ],
+      [
+       2,
+       "Aegis only protects agains one specific damage type at a time"
+      ],
+      [
+       2,
+       "After getting hit with different type, it adapts automatically"
       ]
      ],
      "id": "black-armor--infernal-toughness",
@@ -1643,7 +1824,7 @@ window.TALENT_DATA = {
     {
      "name": "Black Hooves, Fiery Heart",
      "owned": false,
-     "cost": 6.0,
+     "cost": 3.5,
      "type": "Milestone Upgrade",
      "prereqText": "any 2 talents in this tree",
      "tier": null,
@@ -1663,6 +1844,10 @@ window.TALENT_DATA = {
       [
        0,
        "Nightmare has Int 8 and can speak Infernal"
+      ],
+      [
+       0,
+       "This Nightmare doesn't have flight or ability to walk through Ethereal plane"
       ]
      ],
      "id": "explorer--black-hooves-fiery-heart",
@@ -1671,6 +1856,60 @@ window.TALENT_DATA = {
      "prereq": {
       "all": [],
       "any": 2,
+      "anyFrom": [],
+      "unresolved": []
+     }
+    },
+    {
+     "name": "Black Wings on a Moonless Night",
+     "owned": false,
+     "cost": 1.5,
+     "type": "Minor Upgrade",
+     "prereqText": "Black Hooves, Fiery Heart",
+     "tier": null,
+     "desc": [
+      [
+       0,
+       "enables 90'/rnd flight for your Nightmare"
+      ]
+     ],
+     "id": "explorer--black-wings-on-a-moonless-night",
+     "kind": "minor",
+     "tree": "explorer",
+     "prereq": {
+      "all": [
+       [
+        "explorer--black-hooves-fiery-heart"
+       ]
+      ],
+      "any": 0,
+      "anyFrom": [],
+      "unresolved": []
+     }
+    },
+    {
+     "name": "Black Shadow in Silver Dreams",
+     "owned": false,
+     "cost": 1.0,
+     "type": "Minor Upgrade",
+     "prereqText": "Black Hooves, Fiery Heart",
+     "tier": null,
+     "desc": [
+      [
+       0,
+       "Descpription: enables Ethereal Stride for your Nightmare (only for you as its rider)"
+      ]
+     ],
+     "id": "explorer--black-shadow-in-silver-dreams",
+     "kind": "minor",
+     "tree": "explorer",
+     "prereq": {
+      "all": [
+       [
+        "explorer--black-hooves-fiery-heart"
+       ]
+      ],
+      "any": 0,
       "anyFrom": [],
       "unresolved": []
      }
@@ -1925,7 +2164,7 @@ window.TALENT_DATA = {
     {
      "name": "Soulforge",
      "owned": false,
-     "cost": 3.5,
+     "cost": 3.0,
      "type": "Major Upgrade",
      "prereqText": "Currency Gain Improvement I",
      "tier": null,
@@ -1936,11 +2175,35 @@ window.TALENT_DATA = {
       ],
       [
        0,
-       "You gain the ability to enhance your weapon & armor with Soulforged Ephemera"
+       "You gain the ability to enhance your weapon & armor with Soulforged Ephemera using Souls (i.e. XP equivalent of Elara's progression - that's expensive)"
       ],
       [
-       0,
+       1,
+       "Examples of Soulforged Ephemera: Runes of the Rune Knight fighter subclass in SRD"
+      ],
+      [
+       1,
+       "You gain knowledge of 5 various Soulforged Ephemera when you receive this Talent"
+      ],
+      [
+       1,
        "Soulforged Ephemera last up to 1 min"
+      ],
+      [
+       1,
+       "Soulforged Ephemera are activated as a Bonus/Standard Action depending on the type"
+      ],
+      [
+       1,
+       "Each object can hold only 1 Ephemera at a time"
+      ],
+      [
+       1,
+       "Ephemera are one-time effects and are discharged after usage"
+      ],
+      [
+       1,
+       "You can have up to CHA/2 Ephemeras at once"
       ]
      ],
      "id": "reaper--soulforge",
@@ -1994,19 +2257,39 @@ window.TALENT_DATA = {
      "desc": [
       [
        0,
+       "You now gain +20% more Soul Energy instead (i.e. collecting 10 souls gives you +2 free)"
+      ],
+      [
+       0,
        "Can collect Souls remotely by killing targets with spells or Eldritch Blast"
       ],
       [
        0,
-       "Can apply Soulforge Emphemera to any item, can have up to CHA upgrades at once"
+       "Soulforge Ephemera Upgrades:"
       ],
       [
-       0,
-       "Soulforge ephemera durarions improved (CHA min/CHA hours, depending on the ephemera)"
+       1,
+       "You gain knowledge of 5 Higher Soulforged Ephemeras"
       ],
       [
-       0,
-       "You now gain +20% more Soul Energy instead (i.e. collecting 10 souls gives you +2 free)"
+       1,
+       "All soulforge ephemera durarions improved (CHA/CHA * 2 hours, depending on the ephemera)."
+      ],
+      [
+       1,
+       "Cast times vary from bonus action to 10 min, depending on Ephemeras"
+      ],
+      [
+       1,
+       "Each object can now hold up to 2 Ephemera"
+      ],
+      [
+       1,
+       "Ephemera are persistent effects. They're one-off, but are refreshed on Short Rests"
+      ],
+      [
+       1,
+       "You can have up to CHA Ephemeras at once"
       ]
      ],
      "id": "reaper--soul-siphon",
