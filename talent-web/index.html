@@ -86,6 +86,8 @@
     padding: 9px 16px; border-radius: 6px; background: #2a1416; border: 1px solid var(--bad); color: #ffd9d9;
   }
   #toast.good { background: #2a2414; border-color: var(--gold); color: #fff1c4; }
+  #toast button { margin-left: 12px; background: transparent; color: inherit; border: 1px solid currentColor; border-radius: 4px; padding: 2px 8px; font: inherit; cursor: pointer; }
+  .share { display: flex; gap: 6px; }
   footer { padding: 0 22px 26px; color: var(--muted); font-size: 12px; }
 </style>
 </head>
@@ -97,6 +99,12 @@
   <div class="stat"><span class="lbl">Remaining</span><span class="val" id="remaining">0</span></div>
   <button id="reset" title="Bought = talents marked (+) in the note">Reset to note</button>
   <button id="clear" title="Refund everything except talents marked (+) in the note">Refund planned</button>
+  <div class="share">
+    <button id="copylink" title="Copy a link that opens this exact build (budget and planned talents)">Copy link</button>
+    <button id="savefile" title="Download this build as a file">Save file</button>
+    <button id="loadfile" title="Open a build saved with Save file">Load file</button>
+    <input id="filein" type="file" accept=".json,application/json" hidden>
+  </div>
   <div class="legend">
     <span style="--c: var(--minor)">Minor</span>
     <span style="--c: var(--major)">Major</span>
@@ -428,15 +436,79 @@
 
   // ---------- toast
   const toastEl = document.getElementById("toast"); let toastT;
-  function toast(msg, good) {
+  function toast(msg, good, action) {
     toastEl.textContent = msg; toastEl.className = good ? "good" : ""; toastEl.style.display = "block";
-    clearTimeout(toastT); toastT = setTimeout(() => toastEl.style.display = "none", 2600);
+    if (action) {
+      const b = document.createElement("button"); b.textContent = action.label;
+      b.onclick = e => { e.stopPropagation(); toastEl.style.display = "none"; action.fn(); };
+      toastEl.appendChild(b);
+    }
+    clearTimeout(toastT); toastT = setTimeout(() => toastEl.style.display = "none", action ? 9000 : 2600);
   }
+
+  // ---------- sharing: link and file
+  // A build = budget + planned talents (talents marked (+) in the note always come from the current note).
+  const planned = () => [...bought].filter(id => !owned.has(id));
+  function applyBuild(b, what) {
+    if (!b || !Array.isArray(b.planned)) return toast(`That ${what} doesn't contain a talent build.`);
+    const prev = { budget: state.budget, bought: new Set(bought) };
+    const known = b.planned.filter(id => items[id]), lost = b.planned.length - known.length;
+    bought = new Set([...known, ...owned]);
+    let budget = b.budget == null || b.budget === "" ? NaN : Number(b.budget);
+    // Same rule as the browser save: if the note's Points Total changed since the build was made, use the new total.
+    if (DATA.pointsTotal != null && b.noteTotal != null && Number(b.noteTotal) !== DATA.pointsTotal) budget = DATA.pointsTotal;
+    if (isFinite(budget)) state.budget = Math.max(budget, ownedCost);
+    budgetIn.value = fmt(state.budget); save(); refresh(); hideTip();
+    toast(`Loaded build from ${what}: ${known.length} planned talent${known.length === 1 ? "" : "s"}` +
+      (lost ? ` (${lost === 1 ? "1 talent no longer exists and was" : lost + " talents no longer exist and were"} skipped)` : "") + ".", true,
+      { label: "Undo", fn: () => { state.budget = prev.budget; bought = prev.bought; budgetIn.value = fmt(state.budget); save(); refresh(); toast("Restored your previous plan.", true); } });
+  }
+  function buildLink() {
+    const q = new URLSearchParams({ b: fmt(state.budget) });
+    if (DATA.pointsTotal != null) q.set("n", fmt(DATA.pointsTotal));
+    q.set("p", planned().join("."));
+    return location.origin + location.pathname + "?" + q.toString().replace(/%2E/gi, ".") + location.hash;
+  }
+  async function copyText(text) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) {}
+    const ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch (e) {}
+    ta.remove(); return ok;
+  }
+  document.getElementById("copylink").onclick = async e => {
+    e.stopPropagation();
+    const link = buildLink();
+    if (await copyText(link)) toast("Link copied. Opening it shows this exact build.", true);
+    else { history.replaceState(null, "", link); toast("Couldn't copy automatically: the link is now in the address bar, copy it from there."); }
+  };
+  document.getElementById("savefile").onclick = e => {
+    e.stopPropagation();
+    const ids = planned();
+    const data = { app: "elara-talents", version: 1, saved: new Date().toISOString(), budget: state.budget,
+      noteTotal: DATA.pointsTotal, spent: spent(), planned: ids, plannedNames: ids.map(id => items[id].name) };
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
+    a.download = `elara-talents-build-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast("Build saved as a file.", true);
+  };
+  const fileIn = document.getElementById("filein");
+  document.getElementById("loadfile").onclick = e => { e.stopPropagation(); fileIn.click(); };
+  fileIn.onchange = () => {
+    const f = fileIn.files[0]; fileIn.value = ""; if (!f) return;
+    f.text().then(t => { let b; try { b = JSON.parse(t); } catch (e) { return toast("That file isn't a saved build."); } applyBuild(b, "file"); });
+  };
+  // Opened from a shared link: load that build, then drop it from the address bar so later edits aren't overwritten on reload.
+  const qs = new URLSearchParams(location.search);
+  const fromLink = qs.has("p") ? { budget: qs.get("b"), noteTotal: qs.get("n"), planned: qs.get("p").split(".").filter(Boolean) } : null;
+  if (fromLink) history.replaceState(null, "", location.pathname + location.hash);
 
   document.getElementById("foot").innerHTML =
     (DATA.rule ? `Rule: ${esc(DATA.rule.replace(/^Rule:\s*/i, ""))}<br>` : "") +
-    `Left-click a talent for details, right-click to buy or refund. Progress is saved in this browser. Data generated ${esc(DATA.generated)}.`;
+    `Left-click a talent for details, right-click to buy or refund. Progress is saved in this browser automatically; use Copy link or Save file to keep it elsewhere or share it. Data generated ${esc(DATA.generated)}.`;
   save(); refresh();
+  if (fromLink) applyBuild(fromLink, "link");
 })();
 </script>
 </body>
