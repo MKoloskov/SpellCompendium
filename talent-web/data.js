@@ -533,7 +533,7 @@ window.TALENT_DATA = {
      "name": "Regeneration I",
      "owned": true,
      "cost": 1.0,
-     "type": "Major Upgrade",
+     "type": "Minor Upgrade",
      "prereqText": "-",
      "tier": null,
      "desc": [
@@ -551,7 +551,7 @@ window.TALENT_DATA = {
       ]
      ],
      "id": "tenacity--regeneration-i",
-     "kind": "major",
+     "kind": "minor",
      "tree": "tenacity",
      "prereq": {
       "all": [],
@@ -1083,7 +1083,7 @@ window.TALENT_DATA = {
      "name": "Lethal Strike",
      "owned": false,
      "cost": 3.0,
-     "type": "Minor Upgrade",
+     "type": "Major Upgrade",
      "prereqText": "Infernal Fervor",
      "tier": 2,
      "desc": [
@@ -1097,7 +1097,7 @@ window.TALENT_DATA = {
       ]
      ],
      "id": "infernal-fervor--lethal-strike",
-     "kind": "minor",
+     "kind": "major",
      "tree": "infernal-fervor",
      "prereq": {
       "all": [
@@ -1114,7 +1114,7 @@ window.TALENT_DATA = {
      "name": "Riposte",
      "owned": false,
      "cost": 2.0,
-     "type": "Minor Upgrade",
+     "type": "Major Upgrade",
      "prereqText": "Infernal Fervor",
      "tier": 2,
      "desc": [
@@ -1128,7 +1128,7 @@ window.TALENT_DATA = {
       ]
      ],
      "id": "infernal-fervor--riposte",
-     "kind": "minor",
+     "kind": "major",
      "tree": "infernal-fervor",
      "prereq": {
       "all": [
@@ -1459,7 +1459,7 @@ window.TALENT_DATA = {
      "name": "Zephyr Slash",
      "owned": false,
      "cost": 1.5,
-     "type": "Major Upgrade:",
+     "type": "Minor Upgrade",
      "prereqText": "Battle Trance",
      "tier": 4,
      "desc": [
@@ -1473,7 +1473,7 @@ window.TALENT_DATA = {
       ]
      ],
      "id": "weapon-master--zephyr-slash",
-     "kind": "major",
+     "kind": "minor",
      "tree": "weapon-master",
      "prereq": {
       "all": [
@@ -1518,7 +1518,7 @@ window.TALENT_DATA = {
     },
     {
      "name": "Hardy",
-     "owned": false,
+     "owned": true,
      "cost": 1.0,
      "type": "Minor Upgrade",
      "prereqText": "-",
@@ -1769,7 +1769,7 @@ window.TALENT_DATA = {
     },
     {
      "name": "Perfect Form",
-     "owned": false,
+     "owned": true,
      "cost": 1.0,
      "type": "Minor Upgrade",
      "prereqText": "-",
